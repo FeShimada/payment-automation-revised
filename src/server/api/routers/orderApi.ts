@@ -82,105 +82,121 @@ export const ordersRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      console.log('Iniciando criação de pedido com input:', input);
       const { items, price, pdvId } = input;
 
-      // Fetch prices for all items in parallel
-      const prices = await Promise.all(
-        items.map(async item => {
-          const fetchedItem = await ctx.prisma.items.findUnique({
-            where: { id: item.itemId },
-          });
-          if (!fetchedItem)
-            throw new Error(`Item with ID ${item.itemId} not found`);
-          if (fetchedItem.price === undefined)
-            throw new Error(
-              `Price is undefined for item with ID ${item.itemId}`,
-            );
-          return fetchedItem.price;
-        }),
-      );
+      try {
+        console.log('Buscando preços dos itens...');
+        // Fetch prices for all items in parallel
+        const prices = await Promise.all(
+          items.map(async item => {
+            console.log(`Buscando preço para o item ${item.itemId}`);
+            const fetchedItem = await ctx.prisma.items.findUnique({
+              where: { id: item.itemId },
+            });
+            console.log('Item encontrado:', fetchedItem);
+            if (!fetchedItem)
+              throw new Error(`Item with ID ${item.itemId} not found`);
+            if (fetchedItem.price === undefined)
+              throw new Error(
+                `Price is undefined for item with ID ${item.itemId}`,
+              );
+            return fetchedItem.price;
+          }),
+        );
+        console.log('Preços encontrados:', prices);
 
-      // Create the order with the fetched prices
-      const createdOrder = await ctx.prisma.order.create({
-        data: {
-          price,
-          pdv: { connect: { id: pdvId } },
-          items: {
-            create: items.map((item, index) => ({
-              quantity: item.quantity,
-              pricePerItem: prices[index]!, // Use the fetched price
-              item: { connect: { id: item.itemId } },
+        console.log('Criando pedido no banco de dados...');
+        // Create the order with the fetched prices
+        const createdOrder = await ctx.prisma.order.create({
+          data: {
+            price,
+            pdv: { connect: { id: pdvId } },
+            items: {
+              create: items.map((item, index) => ({
+                quantity: item.quantity,
+                pricePerItem: prices[index]!,
+                item: { connect: { id: item.itemId } },
+              })),
+            },
+          },
+          include: { items: true },
+        });
+        console.log('Pedido criado com sucesso:', createdOrder);
+
+        // Create the payment link for the created order
+        const orderId = createdOrder.id;
+        console.log('Buscando detalhes do pedido para criar link de pagamento...');
+
+        const order = await ctx.prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: { include: { item: true } }, pdv: true },
+        });
+        console.log('Detalhes do pedido encontrados:', order);
+
+        if (!order) {
+          throw new Error(`Order with ID ${orderId} not found`);
+        }
+
+        console.log('Formatando itens para API do MercadoPago...');
+        const apiItems = order.items.map(orderItem => ({
+          title: orderItem.item.name,
+          quantity: orderItem.quantity,
+          currency_id: 'BRL',
+          unit_price: orderItem.pricePerItem,
+        }));
+        console.log('Itens formatados:', apiItems);
+
+        console.log('Enviando requisição para o MercadoPago...');
+        const response = await axios.post<MercadoPagoResponse>(
+          'https://api.mercadopago.com/checkout/preferences',
+          {
+            external_reference: `Order ID: ${orderId}`,
+            binary_mode: true,
+            items: apiItems.map(item => ({
+              ...item,
+              description: `Pedido ${orderId}`,
+              category_id: 'others'
             })),
+            back_urls: {
+              success: `${env.APP_URL}/pdv/${order.pdv.id}/success`,
+              failure: `${env.APP_URL}/pdv/${order.pdv.id}/failure`,
+              pending: `${env.APP_URL}/pdv/${order.pdv.id}/pending`
+            },
+            notification_url: `${env.APP_URL}/api/webhook/mercadopago`,
+            statement_descriptor: 'PAYMENT-AUTOMATION',
+            expires: true,
+            expiration_date_from: new Date().toISOString(),
+            expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
           },
-        },
-        include: { items: true },
-      });
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${env.ACCESS_TOKEN}`
+            }
+          },
+        );
+        console.log('Resposta do MercadoPago:', response.data);
 
-      // Create the payment link for the created order
-      const orderId = createdOrder.id;
+        if (response.status !== 201) {
+          throw new Error('Failed to create payment link');
+        }
 
-      // Fetch the order with the provided ID
-      const order = await ctx.prisma.order.findUnique({
-        where: { id: orderId },
-        include: { items: { include: { item: true } }, pdv: true },
-      });
+        console.log('Atualizando pedido com link de pagamento...');
+        const updatedOrder = await ctx.prisma.order.update({
+          where: { id: createdOrder.id },
+          data: {
+            payment_link: response.data.init_point,
+          },
+          include: { items: { include: { item: true } } },
+        });
+        console.log('Pedido atualizado com sucesso:', updatedOrder);
 
-      if (!order) {
-        throw new Error(`Order with ID ${orderId} not found`);
+        return updatedOrder;
+      } catch (error) {
+        console.error('Erro durante a criação do pedido:', error);
+        throw error;
       }
-
-      // Format the order items for the MercadoPago API
-      const apiItems = order.items.map(orderItem => ({
-        title: orderItem.item.name,
-        quantity: orderItem.quantity,
-        currency_id: 'BRL',
-        unit_price: orderItem.pricePerItem,
-      }));
-
-      // Send the POST request to create the payment link
-      const response = await axios.post<MercadoPagoResponse>(
-        'https://api.mercadopago.com/checkout/preferences',
-        {
-          external_reference: `Order ID: ${orderId}`,
-          binary_mode: true,
-          items: apiItems,
-          back_urls: {
-            success: `${env.APP_URL}/pdv/${order.pdv.id}`,
-            failure: `${env.APP_URL}/pdv/${order.pdv.id}`,
-          },
-          auto_return: 'approved',
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          params: {
-            access_token: env.ACCESS_TOKEN,
-          },
-        },
-      );
-      if (response.status !== 201) {
-        throw new Error('Failed to create payment link');
-      }
-
-      // Update the order with the payment link and payment ID
-      await ctx.prisma.order.update({
-        where: { id: orderId },
-        data: {
-          payment_link: response.data.init_point,
-        },
-      });
-
-      // Update the created order with the payment link
-      const updatedOrder = await ctx.prisma.order.update({
-        where: { id: createdOrder.id },
-        data: {
-          payment_link: response.data.init_point,
-        },
-        include: { items: { include: { item: true } } },
-      });
-
-      return updatedOrder;
     }),
 
   update: publicProcedure

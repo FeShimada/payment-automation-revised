@@ -35,19 +35,22 @@ const Store: NextPage = () => {
   const { id } = router.query;
   const [order, setOrder] = useState<any>({});
   const [selectedItems, setSelectedItems] = useState<{
-    [itemId: string]: { item: IItem; quantity: number };
+    [itemId: string]: { item: IItem; quantity: number; };
   }>({});
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const createOrderMutation = api.order.create.useMutation();
 
   // Fetch PDV and items
-  const { data, isLoading, isError } = api.items.getByPdvId.useQuery({
-    pdvId: id as string,
-  });
+  const { data, isLoading, isError } = api.items.getByPdvId.useQuery(
+    { pdvId: id as string },
+    { enabled: !!id }
+  );
 
+  if (!id) return <CircularProgress />;
   if (isLoading) return <CircularProgress />;
   if (isError) return <div>Erro buscando informações.</div>;
+  if (!data || data.length === 0) return <div>Nenhum item encontrado.</div>;
 
   const pdv = data[0]?.pdv;
   const items = data.map(item => item.item);
@@ -76,11 +79,21 @@ const Store: NextPage = () => {
     }
 
     try {
+      // Validações adicionais
+      if (!id) {
+        throw new Error('ID do PDV não encontrado');
+      }
+
       // Transform selectedItems into the format expected by the mutation
       const itemsArray = Object.values(selectedItems).map(itemData => ({
         itemId: itemData.item.id,
         quantity: itemData.quantity,
       }));
+
+      // Validar items
+      if (!itemsArray.every(item => item.itemId && item.quantity > 0)) {
+        throw new Error('Dados dos items inválidos');
+      }
 
       // Calculate the total price
       const totalPrice = Object.values(selectedItems).reduce(
@@ -88,11 +101,25 @@ const Store: NextPage = () => {
         0,
       );
 
+      // Validar preço total
+      if (totalPrice <= 0) {
+        throw new Error('Preço total inválido');
+      }
+
+      console.log('Dados do pedido:', {
+        pdvId: id,
+        items: itemsArray,
+        price: totalPrice,
+      });
+
       const updatedOrder = await createOrderMutation.mutateAsync({
         pdvId: id as string,
         items: itemsArray,
         price: totalPrice,
       });
+
+      console.log('Resposta da criação do pedido:', updatedOrder);
+
       setOrder(updatedOrder);
       setDialogOpen(true);
 
@@ -103,15 +130,23 @@ const Store: NextPage = () => {
       });
 
       setTimeout(() => {
-        updatedOrder.payment_link &&
+        if (updatedOrder.payment_link) {
           window.open(updatedOrder.payment_link, '_blank');
-        setDialogOpen(false);
+          setDialogOpen(false);
+        } else {
+          toast.error('Link de pagamento não gerado', {
+            position: 'top-right',
+            autoClose: 5000,
+            theme: 'colored',
+          });
+        }
       }, 8000);
 
-      // Reset selectedItems after successful order
       setSelectedItems({});
     } catch (error) {
-      toast.error(`Erro ao finalizar a compra`, {
+      console.error('Erro detalhado ao criar pedido:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro ao finalizar a compra: ${errorMessage}`, {
         position: 'top-right',
         autoClose: 5000,
         theme: 'colored',
