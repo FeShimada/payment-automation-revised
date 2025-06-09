@@ -15,6 +15,8 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import Image from 'next/image';
+import PersonIcon from '@mui/icons-material/Person';
+import { Tabs, Tab } from '@mui/material';
 
 import { useRouter } from 'next/router';
 import { api } from '../../utils/api';
@@ -28,6 +30,21 @@ interface ItemOrderHeaderProps {
 export const ItemOrderHeader: React.FC<ItemOrderHeaderProps> = ({ id }) => {
   const router = useRouter();
 
+  // Determina qual tab deve estar selecionada baseado na rota atual
+  const getSelectedTab = () => {
+    const path = router.pathname;
+    if (path.includes('/item')) return 1;
+    if (path.includes('/store')) return 2;
+    return 0; // default para /order
+  };
+
+  const [selectedTab, setSelectedTab] = React.useState(getSelectedTab());
+
+  // Atualiza a tab selecionada quando a rota muda
+  React.useEffect(() => {
+    setSelectedTab(getSelectedTab());
+  }, [router.pathname]);
+
   const logout = api.auth.logout.useMutation({
     onSuccess: () => router.push('/'),
     onError: () => {
@@ -39,22 +56,12 @@ export const ItemOrderHeader: React.FC<ItemOrderHeaderProps> = ({ id }) => {
     },
   });
 
-  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
-
-  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElNav(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-  
-  const handleMenuClick = (page: string) => {
-    handleCloseNavMenu();
-
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
+    const page = pages[newValue];
     if (page === 'Pedidos') {
       void router.push(`/pdv/${id}/order`);
-    } 
+    }
     if (page === 'Itens') {
       void router.push(`/pdv/${id}/item`);
     }
@@ -62,124 +69,109 @@ export const ItemOrderHeader: React.FC<ItemOrderHeaderProps> = ({ id }) => {
       void router.push(`/store/${id}`);
     }
   };
-  
+
   const handleLogOut = () => {
     logout.mutate({});
   };
 
   return (
-    <AppBar>
-      <Container
-        maxWidth="xl"
-        sx={{
-          backgroundColor: theme => theme.palette.primary.main,
-          color: theme => theme.palette.primary.contrastText,
-        }}
-      >
-        <Toolbar disableGutters>
-          <Box
-            sx={{
-              mr: 2,
-              display: { xs: 'none', md: 'flex' },
-              fontWeight: 700,
-              letterSpacing: '.3rem',
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            <Image
-              src={darklogo}
-              alt="Logo da empresa QuickPay"
-              width="50"
-              height="50"
-              priority
-            />
-          </Box>
-
-          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="inherit"
-            >
-              <MenuIcon
-                sx={{ color: theme => theme.palette.primary.contrastText }}
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="fixed" sx={{ bgcolor: '#14B02B' }}>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ minHeight: '64px' }}>
+            {/* Logo e título */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Image
+                src={darklogo}
+                alt="Logo da empresa QuickPay"
+                width="32"
+                height="32"
+                priority
               />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'left',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'left',
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
+                  color: 'white',
+                  fontSize: '1.25rem',
+                  fontWeight: 500,
+                  display: { xs: 'none', sm: 'block' }
+                }}
+              >
+                QuickPay
+              </Typography>
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            {/* Botões da direita */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                startIcon={<PersonIcon />}
+                sx={{
+                  color: 'white',
+                  textTransform: 'none',
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                PDV
+              </Button>
+              <Button
+                startIcon={<PowerSettingsNewRoundedIcon />}
+                onClick={handleLogOut}
+                sx={{
+                  color: 'white',
+                  textTransform: 'none',
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                Sair
+              </Button>
+            </Box>
+          </Toolbar>
+        </Container>
+
+        {/* Barra de navegação */}
+        <Box sx={{ bgcolor: 'white', borderBottom: 1, borderColor: 'divider' }}>
+          <Container maxWidth="xl">
+            <Tabs
+              value={selectedTab}
+              onChange={handleTabChange}
+              textColor="primary"
+              indicatorColor="primary"
               sx={{
-                display: { xs: 'block', md: 'none' },
+                '& .MuiTab-root': {
+                  textTransform: 'uppercase',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  minHeight: '48px',
+                  padding: '6px 16px',
+                  color: 'text.secondary',
+                  '&.Mui-selected': {
+                    color: '#14B02B',
+                  }
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: '#14B02B',
+                }
               }}
             >
-              {pages.map(page => (
-                <MenuItem key={page} onClick={() => handleMenuClick(page)}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
+              {pages.map((page) => (
+                <Tab key={page} label={page} />
               ))}
-            </Menu>
-          </Box>
-          <Box
-            sx={{
-              mr: 2,
-              display: { xs: 'flex', md: 'none' },
-              flexGrow: 1,
-              color: theme => theme.palette.primary.contrastText,
-              textDecoration: 'none',
-            }}
-          >
-            <Image
-              src={darklogo}
-              alt="Logo da empresa QuickPay"
-              width="50"
-              height="50"
-              priority
-            />
-          </Box>
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: { xs: 'none', md: 'flex' },
-              paddingTop: 1,
-            }}
-          >
-            {pages.map(page => (
-              <Button
-                key={page}
-                onClick={() => handleMenuClick(page)}
-                sx={{ color: 'primary.contrastText', display: 'block' }}
-              >
-                {page}
-              </Button>
-            ))}
-          </Box>
-
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Sair">
-              <IconButton size="large" onClick={() => handleLogOut()}>
-                <PowerSettingsNewRoundedIcon
-                  sx={{ color: 'primary.contrastText' }}
-                />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Toolbar>
-      </Container>
-    </AppBar>
+            </Tabs>
+          </Container>
+        </Box>
+      </AppBar>
+      {/* Espaçador para compensar o header fixo */}
+      <Box sx={{ height: 112 }} />
+    </Box>
   );
-}
+};

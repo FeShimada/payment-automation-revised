@@ -1,29 +1,40 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import * as React from 'react';
-import darklogo from '../../assets/images/darklogo.png';
+import logo from '../../assets/images/logo.png';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Menu from '@mui/material/Menu';
-import MenuIcon from '@mui/icons-material/Menu';
-import PowerSettingsNewRoundedIcon from '@mui/icons-material/PowerSettingsNewRounded';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
 import Image from 'next/image';
-
 import { useRouter } from 'next/router';
 import { api } from '../../utils/api';
 import { toast } from 'react-toastify';
-
-const pages = ['PDVs', 'Usuários', 'Log de pagamentos'];
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
 export function Header() {
   const router = useRouter();
+  const [value, setValue] = React.useState(0);
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+    switch (newValue) {
+      case 0:
+        void router.push('/pdv');
+        break;
+      case 1:
+        void router.push('/user');
+        break;
+      case 2:
+        void router.push('/notificationInfo');
+        break;
+    }
+  };
 
   const logout = api.auth.logout.useMutation({
     onSuccess: () => router.push('/'),
@@ -36,147 +47,111 @@ export function Header() {
     },
   });
 
-  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
-    null,
-  );
-
-  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElNav(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-
-  const handleMenuClick = (page: string) => {
-    handleCloseNavMenu();
-
-    if (page === 'PDVs') {
-      void router.push('/pdv');
-    }
-    if (page === 'Usuários') {
-      void router.push('/user');
-    }
-    if (page === 'Log de pagamentos') {
-      void router.push('/notificationInfo');
-    }
-  };
-
   const handleLogOut = () => {
     logout.mutate({});
   };
 
+  // Define o valor inicial da tab baseado na rota atual
+  React.useEffect(() => {
+    if (router.pathname.includes('/pdv')) setValue(0);
+    else if (router.pathname.includes('/user')) setValue(1);
+    else if (router.pathname.includes('/notificationInfo')) setValue(2);
+  }, [router.pathname]);
+
   return (
-    <AppBar>
-      <Container
-        maxWidth="xl"
+    <>
+      <AppBar
+        position="fixed"
+        elevation={0}
         sx={{
-          backgroundColor: theme => theme.palette.primary.main,
-          color: theme => theme.palette.primary.contrastText,
+          backgroundColor: '#14B02B',
+          zIndex: (theme) => theme.zIndex.drawer + 1
         }}
       >
-        <Toolbar disableGutters>
-          <Box
-            sx={{
-              mr: 2,
-              display: { xs: 'none', md: 'flex' },
-              fontWeight: 700,
-              letterSpacing: '.3rem',
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            <Image
-              src={darklogo}
-              alt="Logo da empresa QuickPay"
-              width="50"
-              height="50"
-              priority
-            />
-          </Box>
-
-          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="inherit"
-            >
-              <MenuIcon sx={{ color: 'primary.contrastText' }} />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'left',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'left',
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: 'block', md: 'none' },
-              }}
-            >
-              {pages.map(page => (
-                <MenuItem key={page} onClick={() => handleMenuClick(page)}>
-                  <Typography textAlign="center">{page}</Typography>
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
-          <Box
-            sx={{
-              mr: 2,
-              display: { xs: 'flex', md: 'none' },
-              flexGrow: 1,
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            <Image
-              src={darklogo}
-              alt="Logo da empresa QuickPay"
-              width="50"
-              height="50"
-              priority
-            />
-          </Box>
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: { xs: 'none', md: 'flex' },
-              paddingTop: 1,
-            }}
-          >
-            {pages.map(page => (
-              <Button
-                key={page}
-                onClick={() => handleMenuClick(page)}
-                sx={{ color: 'primary.contrastText', display: 'block' }}
+        <Container maxWidth={false}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', minHeight: '64px' }}>
+            {/* Logo e Nome */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Image
+                src={logo}
+                alt="Logo da empresa QuickPay"
+                width={32}
+                height={32}
+                style={{ marginRight: '8px' }}
+                priority
+              />
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
+                  fontWeight: 500,
+                  color: 'white',
+                  textDecoration: 'none',
+                }}
               >
-                {page}
-              </Button>
-            ))}
-          </Box>
+                QuickPay
+              </Typography>
+            </Box>
 
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Sair">
-              <IconButton size="large" onClick={() => handleLogOut()}>
-                <PowerSettingsNewRoundedIcon
-                  sx={{ color: 'primary.contrastText' }}
-                />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Toolbar>
-      </Container>
-    </AppBar>
+            {/* Botões da direita */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                startIcon={<PersonIcon />}
+                sx={{
+                  color: 'white',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Administrador
+              </Button>
+              <Button
+                onClick={handleLogOut}
+                startIcon={<LogoutIcon />}
+                sx={{
+                  color: 'white',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Sair
+              </Button>
+            </Box>
+          </Toolbar>
+        </Container>
+
+        {/* Barra de navegação */}
+        <Container maxWidth={false}>
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            sx={{
+              '& .MuiTab-root': {
+                color: 'rgba(255, 255, 255, 0.7)',
+                textTransform: 'none',
+                fontWeight: 500,
+                fontSize: '1rem',
+                minHeight: '48px',
+                padding: '6px 16px',
+                '&.Mui-selected': {
+                  color: 'white',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: 'white',
+              }
+            }}
+          >
+            <Tab label="PDVs" />
+            <Tab label="Usuários" />
+            <Tab label="Log de Pagamentos" />
+          </Tabs>
+        </Container>
+      </AppBar>
+      {/* Espaçador para compensar o header fixo */}
+      <Toolbar />
+      <Toolbar sx={{ minHeight: '48px !important' }} />
+    </>
   );
 }

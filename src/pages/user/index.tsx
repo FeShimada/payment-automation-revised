@@ -127,7 +127,7 @@ const User: NextPage = () => {
       confirmButtonColor: '#d33',
       cancelButtonText: 'Não',
       confirmButtonText: 'Sim',
-    }).then((result: { isConfirmed: any }) => {
+    }).then((result: { isConfirmed: any; }) => {
       if (result.isConfirmed) {
         try {
           deleteUserById.mutate({ id });
@@ -216,9 +216,9 @@ const User: NextPage = () => {
               <TableBody>
                 {(rowsPerPage > 0
                   ? filteredUsers.slice(
-                      page * rowsPerPage,
-                      page * rowsPerPage + rowsPerPage
-                    )
+                    page * rowsPerPage,
+                    page * rowsPerPage + rowsPerPage
+                  )
                   : filteredUsers
                 ).map((user) => (
                   <>

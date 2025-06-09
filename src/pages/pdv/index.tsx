@@ -7,10 +7,8 @@ import React, { useState, useEffect } from "react";
 import { type NextPage } from "next";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-
 import { Header } from "../../components/Header";
-import { ContentHeader } from "../../components/ContentHeader";
-import { Edit } from "@mui/icons-material";
+import { Edit, Delete, Add } from "@mui/icons-material";
 import {
   TableContainer,
   Paper,
@@ -20,9 +18,10 @@ import {
   TableCell,
   TableBody,
   IconButton,
-  TablePagination,
+  Typography,
+  Button,
+  Chip,
 } from "@mui/material";
-
 import { api } from "../../utils/api";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
@@ -54,17 +53,8 @@ const PDV: NextPage = () => {
     },
   });
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [pdv, setpdv] = useState<IPDVData[]>(
-    [] as IPDVData[]
-  );
-  const [filteredPDV, setFilteredPDV] = useState<IPDVData[]>(
-    [] as IPDVData[]
-  );
-
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, pdv.length - page * rowsPerPage);
+  const [pdv, setpdv] = useState<IPDVData[]>([] as IPDVData[]);
+  const [filteredPDV, setFilteredPDV] = useState<IPDVData[]>([] as IPDVData[]);
 
   useEffect(() => {
     getpdv.mutate();
@@ -80,12 +70,8 @@ const PDV: NextPage = () => {
   };
 
   const handleEditPDV = (id: string) => {
-    const findPDV = pdv.find(
-      (PDV) => PDV.id === id
-    ) as IPDVData;
-
+    const findPDV = pdv.find((PDV) => PDV.id === id) as IPDVData;
     const formattedPDV = JSON.stringify(findPDV);
-
     void router.push(
       {
         pathname: `/pdv/edit/[id]`,
@@ -98,112 +84,169 @@ const PDV: NextPage = () => {
     );
   };
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value));
-    setPage(0);
-  };
-
   return (
     <>
       <Header />
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            my: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-          }}
-        >
-          <Box>
-            <ContentHeader title="Pontos de Vendas" handleAdd={handleAddPDV} />
+      <Container maxWidth={false} sx={{ p: 3 }}>
+        <Box sx={{ width: '100%', mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 500, color: '#333' }}>
+              Pontos de Vendas
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleAddPDV}
+              sx={{
+                backgroundColor: '#14B02B',
+                '&:hover': {
+                  backgroundColor: '#119324',
+                },
+                textTransform: 'none',
+                borderRadius: '8px',
+                px: 3,
+              }}
+            >
+              Adicionar
+            </Button>
           </Box>
+
           <TableContainer
             component={Paper}
             sx={{
-              mt: 2,
-              backgroundColor: theme => theme.palette.background.paper,
-              borderRadius: '5px 5px 0 0',
+              boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+              borderRadius: '8px',
+              overflow: 'hidden',
             }}
           >
-            <Table size="small" aria-label="lista de pdvs">
+            <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell align="left">Editar</TableCell>
-                  <TableCell align="left">Companhia</TableCell>
-                  <TableCell align="left">Login</TableCell>
-                  <TableCell align="left">Tipo</TableCell>
-                  <TableCell align="left">Ativo</TableCell>
+                  <TableCell sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: '#fff',
+                  }}>
+                    COMPANHIA
+                  </TableCell>
+                  <TableCell sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: '#fff',
+                  }}>
+                    LOGIN
+                  </TableCell>
+                  <TableCell sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: '#fff',
+                  }}>
+                    TIPO
+                  </TableCell>
+                  <TableCell sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: '#fff',
+                  }}>
+                    ATIVO
+                  </TableCell>
+                  <TableCell sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: '#fff',
+                  }}>
+                    AÇÕES
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(rowsPerPage > 0
-                  ? filteredPDV.slice(
-                      page * rowsPerPage,
-                      page * rowsPerPage + rowsPerPage,
-                    )
-                  : filteredPDV
-                ).map((PDVData: IPDVData) => (
-                  <TableRow key={PDVData?.id}>
-                    <TableCell component="th" scope="row" align="left">
-                      <IconButton
-                        aria-label="Editar"
-                        size="small"
-                        onClick={() => handleEditPDV(PDVData?.id)}
-                      >
-                        <Edit />
-                      </IconButton>
-                    </TableCell>
-                    <TableCell component="th" scope="row" align="left">
+                {filteredPDV.map((PDVData: IPDVData) => (
+                  <TableRow
+                    key={PDVData?.id}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5',
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ borderBottom: '1px solid #eee' }}>
                       {PDVData.company}
                     </TableCell>
-                    <TableCell component="th" scope="row" align="left">
+                    <TableCell sx={{ borderBottom: '1px solid #eee' }}>
                       {PDVData.login}
                     </TableCell>
-                    <TableCell component="th" scope="row" align="left">
-                      {PDVData.type}
+                    <TableCell sx={{ borderBottom: '1px solid #eee' }}>
+                      <Chip
+                        label={PDVData.type}
+                        size="small"
+                        sx={{
+                          backgroundColor: PDVData.type === 'manual' ? '#E3F5FF' : '#F0F8FF',
+                          color: PDVData.type === 'manual' ? '#0078D4' : '#333',
+                          borderRadius: '4px',
+                          textTransform: 'lowercase',
+                        }}
+                      />
                     </TableCell>
-                    <TableCell component="th" scope="row" align="left">
-                      {PDVData.isActive ? 'Sim' : 'Não'}
+                    <TableCell sx={{ borderBottom: '1px solid #eee' }}>
+                      <Chip
+                        label="Ativo"
+                        size="small"
+                        sx={{
+                          backgroundColor: '#E6F6EA',
+                          color: '#14B02B',
+                          borderRadius: '4px',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid #eee' }}>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditPDV(PDVData?.id)}
+                          sx={{
+                            color: '#666',
+                            '&:hover': { color: '#333' },
+                          }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          sx={{
+                            color: '#666',
+                            '&:hover': { color: '#d32f2f' },
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 43 * emptyRows }}>
-                    <TableCell colSpan={10} />
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, { label: 'Todos', value: -1 }]}
-            colSpan={10}
-            component={Paper}
-            count={filteredPDV.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            labelRowsPerPage="Linhas por página"
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            sx={{
-              margin: 0,
-              padding: 0,
-              backgroundColor: theme => theme.palette.background.paper,
-              borderTopLeftRadius: '0',
-              borderTopRightRadius: '0',
-            }}
-            size="small"
-          />
+
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mt: 2,
+            color: '#666',
+            fontSize: '0.875rem',
+          }}>
+            <Typography variant="body2">
+              Linhas por página: 5
+            </Typography>
+            <Typography variant="body2">
+              1-2 de 2
+            </Typography>
+          </Box>
         </Box>
       </Container>
     </>

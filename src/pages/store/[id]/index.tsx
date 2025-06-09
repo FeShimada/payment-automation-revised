@@ -6,9 +6,21 @@ import { api } from '../../../utils/api';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
 import React from 'react';
-import ItemCard from '../../../components/ItemCard';
-import OrderSummaryCard from '../../../components/OrderSummary';
-import { Box, Typography, Grid, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Grid,
+  CircularProgress,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  Paper,
+  IconButton,
+  Container,
+  Divider
+} from '@mui/material';
+import { Add, Remove, ShoppingCart } from '@mui/icons-material';
 import PaymentDialog from '../../../components/PaymentDialog';
 
 interface IPDV {
@@ -47,15 +59,6 @@ const Store: NextPage = () => {
     { enabled: !!id }
   );
 
-  if (!id) return <CircularProgress />;
-  if (isLoading) return <CircularProgress />;
-  if (isError) return <div>Erro buscando informações.</div>;
-  if (!data || data.length === 0) return <div>Nenhum item encontrado.</div>;
-
-  const pdv = data[0]?.pdv;
-  const items = data.map(item => item.item);
-
-  // Handle item quantity change
   const handleQuantityChange = (
     itemId: string,
     item: IItem,
@@ -154,35 +157,199 @@ const Store: NextPage = () => {
     }
   };
 
+  const ProductCard = ({ item }: { item: IItem; }) => {
+    const quantity = selectedItems[item.id]?.quantity || 0;
+
+    return (
+      <Card sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: '8px',
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+      }}>
+        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+          <Typography variant="h6" component="h2" gutterBottom>
+            {item.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {item.description}
+          </Typography>
+          <Typography variant="h6" color="success.main" sx={{ mt: 2 }}>
+            R$ {item.price.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Estoque: 1
+          </Typography>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>Quantidade:</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconButton
+                size="small"
+                onClick={() => handleQuantityChange(item.id, item, Math.max(0, quantity - 1))}
+                disabled={quantity === 0}
+              >
+                <Remove />
+              </IconButton>
+              <TextField
+                size="small"
+                value={quantity}
+                inputProps={{
+                  style: { textAlign: 'center' },
+                  min: 0,
+                }}
+                sx={{ width: '80px' }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => handleQuantityChange(item.id, item, quantity + 1)}
+              >
+                <Add />
+              </IconButton>
+            </Box>
+          </Box>
+
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<ShoppingCart />}
+            onClick={() => handleQuantityChange(item.id, item, quantity + 1)}
+            sx={{
+              mt: 3,
+              borderRadius: '8px',
+              textTransform: 'none',
+              backgroundColor: (theme) => theme.palette.primary.main,
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.primary.dark,
+              },
+            }}
+          >
+            Adicionar ao Carrinho
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const CartCard = () => {
+    const hasItems = Object.keys(selectedItems).length > 0;
+
+    return (
+      <Paper sx={{
+        position: 'fixed',
+        right: 24,
+        top: 100,
+        width: 300,
+        borderRadius: '8px',
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+        bgcolor: 'background.paper',
+      }}>
+        <Box sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ShoppingCart sx={{ color: 'text.secondary' }} />
+            <Typography variant="h6" color="text.primary">Pedido</Typography>
+          </Box>
+
+          {!hasItems ? (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              py: 6
+            }}>
+              <ShoppingCart
+                sx={{
+                  fontSize: 80,
+                  color: 'text.disabled',
+                  mb: 2,
+                  opacity: 0.3
+                }}
+              />
+              <Typography color="text.secondary">
+                Seu carrinho está vazio
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {Object.values(selectedItems).map(({ item, quantity }) => (
+                <Box key={item.id} sx={{ mb: 2 }}>
+                  <Typography variant="body1">{item.name}</Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {quantity}x R$ {item.price.toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2">
+                      R$ {(quantity * item.price).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                <Typography variant="subtitle1">Total</Typography>
+                <Typography variant="subtitle1">
+                  R$ {Object.values(selectedItems)
+                    .reduce((total, { item, quantity }) => total + item.price * quantity, 0)
+                    .toFixed(2)}
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={finalizePurchase}
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                }}
+              >
+                Finalizar Compra
+              </Button>
+            </>
+          )}
+        </Box>
+      </Paper>
+    );
+  };
+
+  if (!id) return <CircularProgress />;
+  if (isLoading) return <CircularProgress />;
+  if (isError) return <div>Erro buscando informações.</div>;
+  if (!data || data.length === 0) return <div>Nenhum item encontrado.</div>;
+
+  const pdv = data[0]?.pdv;
+  const items = data.map(item => item.item);
+
   return (
-    <Box sx={{ padding: 2, marginTop: -12 }}>
+    <Container maxWidth="lg" sx={{ mt: 3 }}>
       <PaymentDialog
         open={dialogOpen}
-        text={`Você será redirecionado para a página de pagamento. Se não for redirecionado, clique aqui: `}
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unsafe-member-access
+        text="Você será redirecionado para a página de pagamento. Se não for redirecionado, clique aqui: "
         link={order.payment_link || ''}
       />
-      <Typography variant="h4" gutterBottom>
-        {pdv?.company}
+
+      <Typography
+        variant="h4"
+        sx={{
+          mb: 3,
+          color: 'text.primary',
+          fontWeight: 'medium'
+        }}
+      >
+        Produtos Disponíveis
       </Typography>
-      <Grid container marginBottom={8} spacing={2}>
+
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         {items.map(item => (
           <Grid item key={item.id} xs={12} sm={6} md={4}>
-            <ItemCard
-              item={item}
-              selectedQuantity={selectedItems[item.id]?.quantity || 0}
-              onQuantityChange={quantity =>
-                handleQuantityChange(item.id, item, quantity)
-              }
-            />
+            <ProductCard item={item} />
           </Grid>
         ))}
+
       </Grid>
-      <OrderSummaryCard
-        selectedItems={selectedItems}
-        finalizePurchase={finalizePurchase}
-      />
-    </Box>
+
+      <CartCard />
+    </Container>
   );
 };
 

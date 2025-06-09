@@ -2,32 +2,60 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createTheme } from '@mui/material/styles';
-import { red } from '@mui/material/colors';
 import { roboto } from './roboto';
 
 export const darkTheme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#fea10d',
-      dark: '#050b26',
-      contrastText: '#eaeeed',
+      main: '#14B02B',
+      dark: '#119324',
+      light: '#1DD437',
+      contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#7c7f8e',
+      main: '#666666',
+      light: '#848484',
+      dark: '#4D4D4D',
     },
     error: {
-      main: red.A400,
+      main: '#FF1744',
     },
     background: {
-      default: "#ffffff",
+      default: '#121212',
+      paper: '#1E1E1E',
     },
     text: {
-      primary: '#212121',
-      secondary: '#676767',
+      primary: '#FFFFFF',
+      secondary: '#B3B3B3',
     },
   },
   typography: {
     fontFamily: roboto.style.fontFamily,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: '4px',
+        },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#2C2C2C',
+          },
+        },
+      },
+    },
   },
 });

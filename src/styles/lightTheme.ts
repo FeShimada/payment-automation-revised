@@ -5,33 +5,52 @@ export const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#648A5B',
-      dark: '#4A5E45',
-      contrastText: '#D1E3CD',
+      main: '#14B02B',
+      dark: '#119324',
+      light: '#1DD437',
+      contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#2A3327',
+      main: '#666666',
+      light: '#848484',
+      dark: '#4D4D4D',
     },
     error: {
       main: '#B30200',
     },
     background: {
-      default: '#D1E3CD',
-      paper: '#ffffff',
+      default: '#F5F5F5',
+      paper: '#FFFFFF',
     },
     text: {
-      primary: '#214347',
-      secondary: '#2A3327',
+      primary: '#333333',
+      secondary: '#666666',
     },
   },
   typography: {
     fontFamily: roboto.style.fontFamily,
   },
   components: {
-    MuiInput: {
+    MuiButton: {
       styleOverrides: {
         root: {
-          backgroundColor: '#d9d9d9', // Light grey color
+          textTransform: 'none',
+          borderRadius: '4px',
+        },
+        contained: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#FFFFFF',
+          },
         },
       },
     },

@@ -30,7 +30,6 @@ const loginSchema = z.object({
 
 const Home: NextPage = () => {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const login = api.auth.accessPDV.useMutation({
     onSuccess: async data => {
       if (data.pdv) {
@@ -58,88 +57,99 @@ const Home: NextPage = () => {
   });
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Container component="main" maxWidth="xs" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <Head>
         <title>QuickPay Acesso</title>
       </Head>
       <Box
         sx={{
-          marginTop: 8,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
         }}
       >
-        <Image
-          src={logo}
-          alt="Logo da Empresa QuickPay"
-          style={{
-            width: '250px',
-            height: '200px',
+        <Box sx={{ mb: 4 }}>
+          <Image
+            src={logo}
+            alt="Logo da Empresa QuickPay"
+            style={{
+              width: '80px',
+              height: '80px',
+            }}
+          />
+        </Box>
+        <Box
+          sx={{
+            backgroundColor: 'white',
+            padding: 4,
+            borderRadius: 2,
+            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+            width: '100%',
           }}
-        />
-        <Typography component="h1" variant="h5">
-          Login para Controle de Loja
-        </Typography>
-        <FormikProvider value={formik}>
-          <form noValidate onSubmit={formik.handleSubmit}>
-            <Box sx={{ mt: 1 }}>
-              <div>
-                <Field
-                  name="email"
-                  type="email"
-                  label="Login"
-                  margin="normal"
-                  fullWidth
-                  value={formik.values.email}
-                  as={TextField}
-                  error={formik.touched.email && Boolean(formik.errors.email)}
-                  helperText={formik.touched.email && formik.errors.email}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                <Field
-                  name="password"
-                  type="password"
-                  label="Senha"
-                  margin="normal"
-                  fullWidth
-                  value={formik.values.password}
-                  as={TextField}
-                  error={
-                    formik.touched.password && Boolean(formik.errors.password)
-                  }
-                  helperText={formik.touched.password && formik.errors.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
-                  disabled={login.isLoading} // disable button when loading
-                >
-                  {login.isLoading ? <CircularProgress /> : 'Entrar'}
-                </Button>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                  }}
-                >
-                  <Link href="/login">
-                    <Typography color="primary">
-                      Login para funcionários QuickPay
-                    </Typography>
-                  </Link>
-                </div>
-              </div>
-            </Box>
-          </form>
-        </FormikProvider>
+        >
+          <Typography component="h1" variant="h5" align="center" sx={{ mb: 1 }}>
+            Login para Controle de Loja
+          </Typography>
+          <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+            Acesse o painel de vendas
+          </Typography>
+          <FormikProvider value={formik}>
+            <form noValidate onSubmit={formik.handleSubmit}>
+              <Field
+                name="email"
+                type="email"
+                label="Login"
+                margin="normal"
+                fullWidth
+                value={formik.values.email}
+                as={TextField}
+                error={formik.touched.email && Boolean(formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                sx={{ mb: 2 }}
+              />
+              <Field
+                name="password"
+                type="password"
+                label="Senha"
+                margin="normal"
+                fullWidth
+                value={formik.values.password}
+                as={TextField}
+                error={formik.touched.password && Boolean(formik.errors.password)}
+                helperText={formik.touched.password && formik.errors.password}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                sx={{ mb: 3 }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 1,
+                  mb: 3,
+                  py: 1.5,
+                  backgroundColor: '#14B02B',
+                  '&:hover': {
+                    backgroundColor: '#119324',
+                  },
+                }}
+                disabled={login.isLoading}
+              >
+                {login.isLoading ? <CircularProgress size={24} /> : 'ENTRAR'}
+              </Button>
+              <Box sx={{ textAlign: 'center' }}>
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <Typography color="#14B02B" sx={{ fontWeight: 500 }}>
+                    Login para funcionários QuickPay
+                  </Typography>
+                </Link>
+              </Box>
+            </form>
+          </FormikProvider>
+        </Box>
       </Box>
       <Copyright />
     </Container>

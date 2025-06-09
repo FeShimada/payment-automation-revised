@@ -9,9 +9,9 @@ import Container from '@mui/material/Container';
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import { ItemOrderHeader } from '../../../../components/ItemOrderHeader';
-import { CheckBox, Cancel } from '@mui/icons-material';
+import { CheckBox, Cancel, Search, Visibility } from '@mui/icons-material';
 import Link from 'next/link';
-import type { Items, ItemsOnOrder } from '@prisma/client';
+import type { Items } from '@prisma/client';
 import {
   TableContainer,
   Paper,
@@ -25,6 +25,8 @@ import {
   TablePagination,
   CircularProgress,
   Skeleton,
+  Chip,
+  InputAdornment,
 } from '@mui/material';
 
 import { api } from '../../../../utils/api';
@@ -146,144 +148,105 @@ const PDVOrders: NextPage = () => {
               height: '100%',
             }}
           >
-            <Box>
-              <TextField
-                label="Pesquisar"
-                name="find"
-                margin="dense"
-                size="small"
-                variant="outlined"
-                fullWidth
-                value={find}
-                sx={{
-                  marginTop: 4,
-                  maxWidth: '400px',
-                }}
-                onChange={value => {
-                  if (value.target.value === '') {
-                    setFind(value.target.value);
-                    setOrders(ordersQuery.data ?? []);
-                  } else {
-                    setFind(value.target.value);
-                  }
-                }}
-              />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <h1 style={{ margin: 0 }}>Pedidos</h1>
             </Box>
+
+            <TextField
+              placeholder="Pesquisar pedidos..."
+              name="find"
+              size="small"
+              value={find}
+              sx={{
+                mb: 3,
+                maxWidth: "400px",
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              onChange={value => {
+                if (value.target.value === '') {
+                  setFind(value.target.value);
+                  setOrders(ordersQuery.data ?? []);
+                } else {
+                  setFind(value.target.value);
+                }
+              }}
+            />
+
             <TableContainer
               component={Paper}
               sx={{
-                mt: 2,
+                borderRadius: '8px',
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
               }}
             >
-              <Table size="small" aria-label="lista de pedidos">
+              <Table size="medium" aria-label="lista de pedidos">
                 <TableHead>
                   <TableRow>
-                    <TableCell align="center">Cancelar</TableCell>
-                    <TableCell align="left">Preço total</TableCell>
-                    <TableCell align="left">Items</TableCell>
+                    <TableCell align="left">ITEMS</TableCell>
+                    <TableCell align="left">PREÇO TOTAL</TableCell>
                     <TableCell align="left">ID</TableCell>
-                    <TableCell align="left">Status</TableCell>
-                    <TableCell align="left">Link de pagamento</TableCell>
-                    <TableCell align="center">Finalizar</TableCell>
+                    <TableCell align="left">STATUS</TableCell>
+                    <TableCell align="left">LINK DE PAGAMENTO</TableCell>
+                    <TableCell align="right">FINALIZAR</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(rowsPerPage > 0
                     ? orders.slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage,
-                      )
+                      page * rowsPerPage,
+                      page * rowsPerPage + rowsPerPage,
+                    )
                     : orders
                   ).map(orderOnPDV => (
-                    <>
-                      <TableRow key={orderOnPDV.id}>
-                        <TableCell component="th" scope="row">
-                          <IconButton
-                            aria-label="Cancel"
-                            size="small"
-                            onClick={() =>
-                              void updateOrderStatus(orderOnPDV.id, 'canceled')
-                            }
-                          >
-                            <Cancel />
-                          </IconButton>
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            width: '20%',
-                          }}
+                    <TableRow key={orderOnPDV.id}>
+                      <TableCell>{orderOnPDV.items.map(
+                        (item: { item: Items; quantity: number; }, index: number) => (
+                          <div key={index}>
+                            {item.item.name}
+                          </div>
+                        ),
+                      )}</TableCell>
+                      <TableCell>R$ {orderOnPDV.price}</TableCell>
+                      <TableCell>{orderOnPDV.id}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={orderOnPDV.status === 'pending' ? 'Pendente' : orderOnPDV.status}
+                          color={orderOnPDV.status === 'pending' ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link href={orderOnPDV.payment_link} target="_blank" style={{ color: '#10B981', textDecoration: 'none' }}>
+                          Link de Pagamento
+                        </Link>
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={() => void updateOrderStatus(orderOnPDV.id, 'delivered')}
                         >
-                          R$ {orderOnPDV.price}
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            width: '25%',
-                          }}
+                          <CheckBox />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => void updateOrderStatus(orderOnPDV.id, 'canceled')}
                         >
-                          {orderOnPDV.items.map(
-                            (
-                              item: {
-                                item: Items;
-                                quantity: number;
-                              },
-                              index: number,
-                            ) => (
-                              <div key={index}>
-                                <strong>Item:</strong> {item.item.name} <br />
-                                <strong>Quantidade:</strong> {item.quantity}
-                              </div>
-                            ),
-                          )}
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            width: '30%',
-                          }}
-                        >
-                          {orderOnPDV.id}
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            width: '30%',
-                          }}
-                        >
-                          {orderOnPDV.status}
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          scope="row"
-                          sx={{
-                            width: '50%',
-                          }}
-                        >
-                          <Link href={orderOnPDV.payment_link} target="_blank">
-                            {orderOnPDV.payment_link}
-                          </Link>
-                        </TableCell>
-                        <TableCell component="th" scope="row">
-                          <IconButton
-                            aria-label="CheckBox"
-                            size="small"
-                            onClick={() =>
-                              void updateOrderStatus(orderOnPDV.id, 'delivered')
-                            }
-                          >
-                            <CheckBox />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    </>
+                          <Cancel />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
                   ))}
                   {emptyRows > 0 && (
-                    <TableRow style={{ height: 43 * emptyRows }}>
+                    <TableRow style={{ height: 53 * emptyRows }}>
                       <TableCell colSpan={6} />
                     </TableRow>
                   )}
@@ -291,11 +254,7 @@ const PDVOrders: NextPage = () => {
                 <TableFooter>
                   <TableRow>
                     <TablePagination
-                      rowsPerPageOptions={[
-                        5,
-                        10,
-                        { label: 'Todos', value: -1 },
-                      ]}
+                      rowsPerPageOptions={[5, 10, { label: 'Todos', value: -1 }]}
                       colSpan={6}
                       count={orders.length}
                       rowsPerPage={rowsPerPage}
